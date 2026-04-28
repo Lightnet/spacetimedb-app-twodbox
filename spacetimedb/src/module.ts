@@ -5,6 +5,9 @@ import { schema, table, t, SenderError  } from 'spacetimedb/server';
 import { entity } from './tables/table_entity';
 import { transform2d } from './tables/table_transform2d';
 import { transform2dAnimation } from './tables/table_animation';
+import { userInputs } from './tables/table_userinput';
+import { players } from './tables/table_player';
+import { simulationTicks } from './tables/table_simulationtick';
 //-----------------------------------------------
 // SCEHEMA
 //-----------------------------------------------
@@ -12,6 +15,9 @@ const spacetimedb = schema({
   entity,
   transform2d,
   transform2dAnimation,
+  simulationTicks,
+  players,
+  userInputs,
 });
 //-----------------------------------------------
 // INIT

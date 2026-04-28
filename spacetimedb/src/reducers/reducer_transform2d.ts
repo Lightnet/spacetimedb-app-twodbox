@@ -22,6 +22,7 @@ export const add_entity_transform2d = spacetimedb.reducer(
     ctx.db.transform2d.insert({
       position: { x: 0, y: 0},
       rotation: 0, //degree
+      velocity: { x: 0, y: 0},
       scale: { x: 1, y: 1 },
       entityId: entityId,
       parentId: "",

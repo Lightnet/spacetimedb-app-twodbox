@@ -18,7 +18,8 @@ export const transform2d = table(
     position: Vect2,
     rotation: t.f32(), // degree
     scale: Vect2,
-    localMatrix: t.array(t.f32()).optional(),
-    worldMatrix: t.array(t.f32()).optional(),
+    velocity: Vect2,
+    localMatrix: t.array(t.f32()),
+    worldMatrix: t.array(t.f32()),
   }
 );

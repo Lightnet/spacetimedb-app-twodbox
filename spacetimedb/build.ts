@@ -93,7 +93,7 @@ async function build() {
   output += `// Generated: ${new Date().toISOString()}\n`;
   output += `// =============================================\n\n`;
 
-  output += `import { schema, table, t } from 'spacetimedb/server';\n`;
+  output += `import { schema, table, t, SenderError } from 'spacetimedb/server';\n`;
   output += `import { ScheduleAt } from 'spacetimedb';\n`;
 
   output += `import { 

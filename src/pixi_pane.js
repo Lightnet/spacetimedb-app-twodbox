@@ -134,6 +134,7 @@ function selectEntity(id){
   const _transform2d = dbTransform2Ds.val.get(id);
   console.log(_transform2d);
   if(_transform2d){
+    if(!_transform2d.localMatrix) return;
     const worldPos = transformPoint(_transform2d.localMatrix, 0, 0);
     let worldRotation = getRotationFromMatrix(_transform2d.localMatrix)
     let worldScale = getScaleFromMatrix(_transform2d.localMatrix)
@@ -296,6 +297,16 @@ const debugFolder = pane.addFolder({
 debugFolder.addButton({title:'Clear Transform2Ds'}).on('click',()=>{
   const conn = stateConn.val;
   conn.reducers.clearAllTransforms();
+})
+
+debugFolder.addButton({title:'create Player'}).on('click',()=>{
+  const conn = stateConn.val;
+  conn.reducers.createPlayer();
+})
+
+debugFolder.addButton({title:'test reducers'}).on('click',()=>{
+  const conn = stateConn.val;
+  console.log(conn.reducers);
 })
 
 }
