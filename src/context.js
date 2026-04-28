@@ -19,13 +19,11 @@ export const statePhaser = van.state(null);
 export const statePixi = van.state(null);
 export const stateWorld = van.state(null);
 
+export const stateMarker = van.state(null);
+
 
 export const stateZoomLevel = van.state(1);
-
 export const stateZoomSpeed = van.state(0.1);
 export const stateMinZoom = van.state(0.2);
 export const stateMaxZoom = van.state(5.0);
-
-
-
 

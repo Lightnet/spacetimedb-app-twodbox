@@ -3,7 +3,7 @@ import { Application, Graphics, Container } from 'pixi.js';
 
 import * as PIXI from 'pixi.js';
 
-import { statePixi, stateWorld, stateZoomLevel } from './context';
+import { dbTransform2Ds, objTransform2Ds, stateEntityId, stateMarker, statePixi, stateWorld, stateZoomLevel } from './context';
 
 let zoomLevel = 1;
 const zoomSpeed = 0.1;   // adjust for sensitivity
@@ -28,6 +28,16 @@ export async function initPixi() {
   const world = new Container(); //camera
   app.stage.addChild(world);
   stateWorld.val = world;
+
+
+  const marker = new Graphics()
+    .rect(0, 0, 48, 48) // Create a 100x100 square at (0,0)
+    .stroke({ width: 2, color: 0x1f6e00 }); // Draw white lines with 2px thickness
+  marker.pivot.set(24, 24);
+  stateMarker.val = marker;
+  // app.stage.addChild(square);
+  world.addChild(marker);
+
 
   // Mouse wheel zoom (centered on screen, not mouse)
   app.canvas.addEventListener('wheel', (e) => {
@@ -81,11 +91,23 @@ export async function initPixi() {
   const yText = new PIXI.Text({text:'y is down (base old screen (x,y))', fontSize: 24, fill: 0xffffff });
   app.stage.addChild(yText);
 
+  function update_marker(){
+    if(stateMarker.val){
+      if(stateEntityId.val != ""){
+        const gmesh = objTransform2Ds.val.get(stateEntityId.val);
+
+        stateMarker.val.position.x = gmesh.position.x;
+        stateMarker.val.position.y = gmesh.position.y;
+      }
+    }
+  }
+
   // Listen for animate update
   app.ticker.add((time) => {
     fpsText.text = `FPS: ${Math.round(app.ticker.FPS)}`;
     // rectangle.rotation += 0.01;
     // console.log("update...");
+    update_marker();
   });
 
 

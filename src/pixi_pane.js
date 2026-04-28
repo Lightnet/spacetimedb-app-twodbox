@@ -27,14 +27,11 @@ const PARAMS = {
   t2_scale:{x:1,y:1},
 }
 
-
-
-
 export function setupPane(){
   const pane = new Pane();
 
   const zoomFolder = pane.addFolder({
-    title:"Zoom"
+    title:"Camera"
   })
   zoomFolder.addBinding(stateZoomLevel, 'val',{
     label:"Level",
@@ -73,10 +70,10 @@ entityFolder.addButton({title: 'Create'}).on('click',()=>{
 });
 deleteEntityBinding = entityFolder.addButton({title: 'Delete Entity'}).on('click',()=>{
   try {
-    if(PARAMS.entityId !== "" ){
+    if(stateEntityId.val !== "" ){
       const conn = stateConn.val;
       conn.reducers.deleteEntity({
-        entityId:PARAMS.entityId
+        entityId:stateEntityId.val
       });
     }
   } catch (error) {

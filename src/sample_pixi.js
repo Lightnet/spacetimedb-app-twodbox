@@ -4,15 +4,17 @@ import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpan
 import van from "vanjs-core";
 import { Modal, MessageBoard } from "vanjs-ui";
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { ViewportGizmo } from "three-viewport-gizmo";
+// import * as THREE from 'three';
+// import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// import { ViewportGizmo } from "three-viewport-gizmo";
 import { initPixi } from './pixi_render';
 import { setupDBEntity } from './db/db_entity';
 import { Graphics } from 'pixi.js';
 import { setupPane } from './pixi_pane';
 import { transformPoint } from './helper_transform2d';
-
+import { setupDBTransform2Ds } from './pixi/transform2d';
+import { setupInput } from './pixi/input';
+// import { setupInput } from './pixi/input';
 
 const {style, div, input, textarea, button, span, img, label, p, table, tr, td, tbody } = van.tags;
 const HOST = 'ws://localhost:3000';
@@ -23,48 +25,60 @@ const my_css = style(`
 body{
   margin: 0;
   overflow: hidden;
+  background-color:gray;
 }  
 `);
 van.add(document.head, my_css);
+const loadingscreen = div({style:`
+  display: flex; 
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center;
+  height: 100vh;
+  `},
+  div(
+    label("Loading")
+  ),
+  div(
+    label(()=>networkStatus.val),
+  )
+);
+van.add(document.body, loadingscreen);
 
-const keys = {
-  forward:  false,
-  backward: false,
-  left:     false,
-  right:    false,
-  // jump:  false,   ← add later when you need it
-};
-
+networkStatus.val = 'Initial connection...';
 
 //-----------------------------------------------
 // 
 //-----------------------------------------------
-const conn = DbConnection.builder()
-  .withUri(HOST)
-  .withDatabaseName(DB_NAME)
-  .withToken(localStorage.getItem(TOKEN_KEY) || undefined)
-  .onConnect(async (conn, identity, token) => {
-    localStorage.setItem(TOKEN_KEY, token);
-    console.log('connnect');
-    networkStatus.val = 'Connected';
-    stateConn.val = conn;
-    // console.log("identity: ", identity);
-    console.log("identity: ", identity.toHexString());
-    // console.log("conn: ", conn);
-    userIdentity.val = identity;
-    setup();
-  })
-  .onDisconnect(() => {
-    console.log('Disconnected from SpacetimeDB');
-    networkStatus.val = 'Disconnected';
-  })
-  .onConnectError((_ctx, error) => {
-    console.error('Connection error:', error);
-    networkStatus.val = 'Connection error';
-    // statusEl.textContent = 'Error: ' + error.message;
-    // statusEl.style.color = 'red';
-  })
-  .build();
+function setupNetwork(){
+  const conn = DbConnection.builder()
+    .withUri(HOST)
+    .withDatabaseName(DB_NAME)
+    .withToken(localStorage.getItem(TOKEN_KEY) || undefined)
+    .onConnect(async (conn, identity, token) => {
+      localStorage.setItem(TOKEN_KEY, token);
+      console.log('connnect');
+      networkStatus.val = 'Connected';
+      stateConn.val = conn;
+      // console.log("identity: ", identity);
+      console.log("identity: ", identity.toHexString());
+      // console.log("conn: ", conn);
+      userIdentity.val = identity;
+      setup();
+      document.body.removeChild(loadingscreen);
+    })
+    .onDisconnect(() => {
+      console.log('Disconnected from SpacetimeDB');
+      networkStatus.val = 'Disconnected';
+    })
+    .onConnectError((_ctx, error) => {
+      console.error('Connection error:', error);
+      networkStatus.val = 'Connection error!';
+      // statusEl.textContent = 'Error: ' + error.message;
+      // statusEl.style.color = 'red';
+    })
+    .build();
+}
 //-----------------------------------------------
 // 
 //-----------------------------------------------
@@ -75,15 +89,15 @@ function create_box_test(){
   // console.log(world);
   // 2. Create a Graphics object
   const rectangle = new Graphics()
-    .rect(0, 0, 50, 50) // x, y, width, height
+    .rect(0, 0, 32, 32) // x, y, width, height
     .fill(0xDE3249)         // Set fill color
     .stroke({ width: 2, color: 0xffffff }); // Optional border
-  rectangle.pivot.set(25, 25);
+  rectangle.pivot.set(16, 16);
   console.log(rectangle);
   world.addChild(rectangle);
 }
 
-function create_box(row){
+export function create_box(row){
   console.log(row);
   const world = stateWorld.val;
   const app = statePixi.val;
@@ -94,10 +108,10 @@ function create_box(row){
   console.log(worldPos);
 
   const rectangle = new Graphics()
-    .rect(0, 0, 50, 50) // x, y, width, height
+    .rect(0, 0, 32, 32) // x, y, width, height
     .fill(0xDE3249)         // Set fill color
     .stroke({ width: 2, color: 0xffffff }); // Optional border
-  rectangle.pivot.set(25, 25);
+  rectangle.pivot.set(16, 16);
   rectangle.position.set(
       worldPos.x,
       worldPos.y
@@ -108,62 +122,20 @@ function create_box(row){
   objTransform2Ds.val.set( row.entityId, rectangle)
 }
 
-function update_box(row){
+export function update_box(row){
   console.log("update_box: ",row);
   const t2 = objTransform2Ds.val.get(row.entityId);
   if(t2){
-
     const worldPos = transformPoint(row.worldMatrix, 0, 0);
-
     t2.position.set(
       worldPos.x,
       worldPos.y
     );
   }
 }
-//-----------------------------------------------
-// 
-//-----------------------------------------------
-function addOrUpdateEntity(ent) {
-  if (!ent || !ent.entityId) return;
-  const currentMap = dbTransform2Ds.val;        // get current
-  const newMap = new Map(currentMap);           // create copy
-  newMap.set(ent.entityId, ent);
-  dbTransform2Ds.val = newMap;                  // assign new Map → triggers update
-}
-function deleteEntity(id) {
-  if (!id) return;
-  // Create new Map without the item
-  const newMap = new Map(dbTransform2Ds.val);
-  newMap.delete(id);
-  // Update the state (this is what makes VanJS detect the change)
-  dbTransform2Ds.val = newMap;
-}
-function onInsert_Transform2Ds(_ctx, row){
-  // console.log(row);
-  addOrUpdateEntity(row);
-  create_box(row);
-}
-function onUpdate_Transform2Ds(_ctx, oldRow, newRow){
-  // console.log(row);
-  addOrUpdateEntity(newRow);
-  update_box(newRow);
-}
-function onDelete_Transform2Ds(_ctx, row){
-  deleteEntity(row.id)
-}
-export function setupDBTransform2Ds(){
-  // console.log(connState.val)
-  const conn = stateConn.val;
-  conn.subscriptionBuilder()
-    .subscribe(tables.transform2d);
-  conn.db.transform2d.onInsert(onInsert_Transform2Ds);
-  conn.db.transform2d.onUpdate(onUpdate_Transform2Ds);
-  conn.db.transform2d.onDelete(onDelete_Transform2Ds);
-}
 
 //-----------------------------------------------
-// 
+// SETUP
 //-----------------------------------------------
 async function setup(){
   await initPixi();
@@ -174,55 +146,4 @@ async function setup(){
   setupInput();
 }
 
-
-function updateMovement() {
-  const dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const dy = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
-
-  conn.reducers.updateUserInput({
-    directionX: dx,
-    directionY: -dy,
-    // jump: false   // ← change when you add jump
-  });
-}
-
-function setupInput(){
-
-  window.addEventListener('keydown', e => {
-    // Prevent repeating keys from browser (very important!)
-    if (e.repeat) return;
-
-    switch (e.code) {
-      case 'KeyW': keys.forward  = true; break;
-      case 'KeyS': keys.backward = true; break;
-      case 'KeyA': keys.left     = true; break;
-      case 'KeyD': keys.right    = true; break;
-      case 'KeyR':
-        console.log('reset');
-        conn.reducers.setPlayerPosition({ x: 0, y: 0 });
-        return; // no need to update movement
-    }
-
-    updateMovement();
-  });
-
-  window.addEventListener('keyup', e => {
-    switch (e.code) {
-      case 'KeyW': keys.forward  = false; break;
-      case 'KeyS': keys.backward = false; break;
-      case 'KeyA': keys.left     = false; break;
-      case 'KeyD': keys.right    = false; break;
-      // KeyR doesn't affect movement → ignore
-    }
-    updateMovement();
-  });
-
-  // Optional: also handle lost focus (very common bug source)
-  window.addEventListener('blur', () => {
-    // Reset all keys when tab/window loses focus
-    Object.keys(keys).forEach(k => keys[k] = false);
-    updateMovement();
-  });
-
-
-}
+setupNetwork();
